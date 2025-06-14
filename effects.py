@@ -4,7 +4,7 @@ import random
 def lerp(a, b, t):
     return a + (b - a) * t 
 
-class Animation():
+class Animation:
     def __init__(self, initial_pos, target_pos, duration):
         self.init_pos = [initial_pos[0], initial_pos[1]]
         self.target_pos = [target_pos[0], target_pos[1]]
@@ -57,3 +57,63 @@ class Animation_shake(Animation):
         super().__init__(self.pos, self.mother_pos, self.duration)
         self.isActive = False
 
+
+
+class Particle(pygame.sprite.Sprite):
+    def __init__(self, position):
+        super().__init__()
+        
+        self.image = pygame.Surface((3, 3))
+        self.image.fill("aqua")
+        self.speed = 0.3
+
+        self.rect = self.image.get_rect(midbottom = position)
+
+        self.direction = (random.randrange(-10, 10) * self.speed, random.randrange(-10, 10) * self.speed)
+        
+        self.life = 30 #decrements
+
+
+    def update(self):
+        if self.life <= 0:
+            self.kill()
+        else: 
+            self.life -= 1
+            self.rect.x += self.direction[0]
+            self.rect.y += self.direction[1]
+
+
+
+class Particle_system:
+    def __init__(self, surface, position, spawn_cooldown = 0):
+        #particle properties
+        self.particle_speed = 0.3
+        self.particle_life = 30
+        
+        #particle system
+        self.spawn_cooldown = spawn_cooldown
+        self.spawn_cooldown_countdown = 0 #kazdym updatem se incrementuje, -1 pokud je objekt neaktivni
+        
+        self.particles = pygame.sprite.Group()
+
+        self.position = position
+        self.surface = surface
+
+
+    def update(self):
+        if self.spawn_cooldown_countdown >= self.spawn_cooldown:
+            new_particle = Particle(self.position)
+            self.particles.add(new_particle)
+            
+            self.spawn_cooldown_countdown = 0
+        elif self.spawn_cooldown_countdown != -1: 
+            self.spawn_cooldown_countdown += 1
+
+        self.particles.draw(self.surface)
+        self.particles.update()
+        
+
+    def kill(self):
+        kill_delay = self.particle_life - self.spawn_cooldown_countdown
+        self.spawn_cooldown_countdown = -1
+        return kill_delay

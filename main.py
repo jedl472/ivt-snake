@@ -14,9 +14,36 @@ clock = pygame.time.Clock()
 
 game_surface = pygame.Surface(SCREEN_SIZE)
 
-pygame.draw.rect(game_surface, "aqua", pygame.Rect(SCREEN_SIZE[0]/2-50, SCREEN_SIZE[1]/2-50, 100, 100))
+
+class Temporary_gameobject_manager:
+    # PRO DOCASNE GAMEOBJEKTY:
+    # musi mit: kill (vrati hodnotu framu za jak dlouho bude kilnute, plati hlavne aby fungoval particle system)
+    #           update (protoze duvody)
+
+    def __init__(self):
+        self.content = [] # content[object, life_countdown]
+
+    def add(self, obj, life):
+        self.content.append([obj, life, 0]) # posledni byte je nastaveny na 0 pokud objekt zije, jinak slouzi jako cooldown k zabiti
+
+    def update(self):
+        # print("update: ")
+        for i in range(len(self.content)):
+            # print(self.content[i])
+            if self.content[i][1] == 0:
+                if self.content[i][2] != 0:
+                    self.content[i] = -1
+                else:
+                    self.content[i][1] = self.content[i][0].kill()
+                    self.content[i][2] = 1 # objekt ceka na zabiti
+            elif self.content[i][1] != 0:
+                self.content[i][0].update()
+                self.content[i][1] -= 1
 
 
+        self.content = [value for value in self.content if value != -1]
+        
+            
 
 
 class Player(pygame.sprite.Sprite): 
@@ -81,14 +108,20 @@ class Player(pygame.sprite.Sprite):
             self.speedCountdown = 0
         else: self.speedCountdown += 1
 
+    
+
+temp_obj_manager = Temporary_gameobject_manager()
 
 
 screen_animation = Animation_shake((0, 0), 100, 5)
 screen_animation.end()
 
+sample_particle_system = Particle_system(game_surface, (100, 100))
+
 screen_animation_isActive = False
 player = Player()
-
+# player = pygame.sprite.GroupSingle()
+# player.add(Player())
 
 while True:
     # Process player inputs.
@@ -99,6 +132,9 @@ while True:
             pygame.quit()
             raise SystemExit
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                pygame.quit()
+                raise SystemExit
             if event.key == pygame.K_SPACE:
                 if screen_animation_isActive == True:
                     screen_animation_isActive = False
@@ -106,12 +142,16 @@ while True:
                 else:
                     screen_animation_isActive = True
                     screen_animation.isActive = True
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            temp_obj_manager.add(Particle_system(game_surface, event.pos), 10)
+
                 
-    screen_animation.update()
 
     # Do logical updates here.
     # ...
     player.movementUpdate()
+    temp_obj_manager.update()
 
     GAME_SURFACE_OFSET = screen_animation.pos
 
@@ -122,6 +162,10 @@ while True:
     # Render the graphics here.
     # ...
     player.imageUpdate()
+    screen_animation.update()
+    # sample_particle_system.position = (player.snake[-1])
 
     pygame.display.flip()  # Refresh on-screen display
-    clock.tick(GAME_FPS)   
+    clock.tick(GAME_FPS)  
+
+    print("FPS:", clock.get_fps())
