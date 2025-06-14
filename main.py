@@ -49,9 +49,30 @@ class Animation():
             self.phase += 1
 
 class Animation_shake(Animation):
-    def __init__(self, initial_pos, offset_range)
+    def __init__(self, mother_pos, offset_range, speed):
+        super().__init__(mother_pos, mother_pos, speed)
 
-screen_animation = Animation((0, 0), (200, 200), 200)
+        self.speed = speed
+        self.mother_pos = list(mother_pos)
+        self.offset_range = offset_range
+
+        self.pos = list(mother_pos)
+
+    def restart(self):
+        next_pos = (self.mother_pos[0] + random.randrange(-self.offset_range, self.offset_range), self.mother_pos[1] + random.randrange(-self.offset_range, self.offset_range))
+        super().__init__(self.pos, next_pos, self.speed)
+
+    def update(self):
+        self.update_lerp()
+
+        if self.phase >= self.duration:
+            self.restart()
+
+    def end(self):
+        super().__init__(self.pos, self.mother_pos, self.duration)
+
+
+screen_animation = Animation_shake((0, 0), 200, 10)
 
 while True:
     # Process player inputs.
@@ -62,7 +83,7 @@ while True:
 
     # Do logical updates here.
     # ...
-    screen_animation.update_lerp()
+    screen_animation.update()
     GAME_SURFACE_OFSET = screen_animation.pos
 
     screen.fill("black")
