@@ -1,6 +1,8 @@
 import pygame
 import random
 
+from effects import *
+
 pygame.init()
 
 SCREEN_SIZE = (1280, 720)
@@ -14,83 +16,112 @@ game_surface = pygame.Surface(SCREEN_SIZE)
 
 pygame.draw.rect(game_surface, "aqua", pygame.Rect(SCREEN_SIZE[0]/2-50, SCREEN_SIZE[1]/2-50, 100, 100))
 
-def lerp(a, b, t):
-    return a + (b - a) * t 
 
 
-class player(pygame.sprite.Sprite): 
-    pass
 
-class Animation():
-    def __init__(self, initial_pos, target_pos, duration):
-        self.init_pos = [initial_pos[0], initial_pos[1]]
-        self.target_pos = [target_pos[0], target_pos[1]]
-        self.duration = duration
+class Player(pygame.sprite.Sprite): 
+    def __init__(self):
+        super().__init__()
 
-        self.pos = self.init_pos
+        self.snake = [(200, 200), (210, 200), (220, 200), (230, 200), (240, 200)]
+
+        self.direction = [1, 0]
+        self.scale = 20
         
-        self.phase = 0
+        self.length = 5
 
-    def update_linear(self):
-        step = (int((target_pos[0] - initial_pos[0])/duration), int((target_pos[1] - initial_pos[1])/duration))
+        self.speed = 5
+        self.speedCountdown = 0
 
-        if self.phase < self.duration:
-            self.pos[0] += step[0]
-            self.pos[1] += step[1]
+        self.skin = pygame.Surface((self.scale,self.scale))
+        self.skin.fill((255, 255, 255))
 
-            self.phase += 1
-
-    def update_lerp(self):
-        print("update: ", self.phase/self.duration, lerp(self.init_pos[0], self.target_pos[0], self.phase/self.duration), "pos: ", self.pos)
-        if self.phase < self.duration:
-            self.pos[0] = lerp(self.init_pos[0], self.target_pos[0], self.phase/self.duration)
-            self.pos[1] = lerp(self.init_pos[1], self.target_pos[1], self.phase/self.duration)
-
-            self.phase += 1
-
-class Animation_shake(Animation):
-    def __init__(self, mother_pos, offset_range, speed):
-        super().__init__(mother_pos, mother_pos, speed)
-
-        self.speed = speed
-        self.mother_pos = list(mother_pos)
-        self.offset_range = offset_range
-
-        self.pos = list(mother_pos)
-
-    def restart(self):
-        next_pos = (self.mother_pos[0] + random.randrange(-self.offset_range, self.offset_range), self.mother_pos[1] + random.randrange(-self.offset_range, self.offset_range))
-        super().__init__(self.pos, next_pos, self.speed)
-
-    def update(self):
-        self.update_lerp()
-
-        if self.phase >= self.duration:
-            self.restart()
-
-    def end(self):
-        super().__init__(self.pos, self.mother_pos, self.duration)
+        self.head = pygame.Surface((self.scale, self.scale))
+        self.head.fill((200, 200, 200))
+    
+    def eventUpdate(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                self.direction = [-1, 0]
+            if event.key == pygame.K_d:
+                self.direction = [1, 0]
+            if event.key == pygame.K_w:
+                self.direction = [0, -1]
+            if event.key == pygame.K_s:
+                self.direction = [0, 1]
+            
+            if event.key == pygame.K_UP:
+                self.length += 1
+            if event.key == pygame.K_DOWN:
+                self.length -= 1
 
 
-screen_animation = Animation_shake((0, 0), 200, 10)
+    def imageUpdate(self):
+        for snake_pos in self.snake[0:-1]:
+            game_surface.blit(self.skin, snake_pos)
+        game_surface.blit(self.head, self.snake[-1])
+
+    def movementUpdate(self):
+        if self.speedCountdown >= self.speed:
+            if self.direction == [1, 0]:
+                self.snake.append((self.snake[len(self.snake)-1][0] + self.scale , self.snake[len(self.snake)-1][1]))
+            elif self.direction == [0, -1]:
+                self.snake.append((self.snake[len(self.snake)-1][0] , self.snake[len(self.snake)-1][1] - self.scale))
+            elif self.direction == [0, 1]:
+                self.snake.append((self.snake[len(self.snake)-1][0] , self.snake[len(self.snake)-1][1] + self.scale))
+            elif self.direction == [-1, 0]:        
+                self.snake.append((self.snake[len(self.snake)-1][0] - self.scale , self.snake[len(self.snake)-1][1]))
+            self.snake.pop(0)
+
+            if len(self.snake) > self.length:
+                self.snake.pop(0)
+            if len(self.snake) < self.length:
+                self.snake.insert(0, self.snake[0])
+            
+            self.speedCountdown = 0
+        else: self.speedCountdown += 1
+
+
+
+screen_animation = Animation_shake((0, 0), 100, 5)
+screen_animation.end()
+
+screen_animation_isActive = False
+player = Player()
+
 
 while True:
     # Process player inputs.
     for event in pygame.event.get():
+        player.eventUpdate(event)
+
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                if screen_animation_isActive == True:
+                    screen_animation_isActive = False
+                    screen_animation.end()
+                else:
+                    screen_animation_isActive = True
+                    screen_animation.isActive = True
+                
+    screen_animation.update()
 
     # Do logical updates here.
     # ...
-    screen_animation.update()
+    player.movementUpdate()
+
     GAME_SURFACE_OFSET = screen_animation.pos
 
     screen.fill("black")
     screen.blit(game_surface, GAME_SURFACE_OFSET)
+    game_surface.fill("black")
 
     # Render the graphics here.
     # ...
+    player.imageUpdate()
 
     pygame.display.flip()  # Refresh on-screen display
     clock.tick(GAME_FPS)   
