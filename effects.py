@@ -1,6 +1,8 @@
 import pygame
 import random
 
+import global_settings
+
 def lerp(a, b, t):
     return a + (b - a) * t 
 
@@ -110,6 +112,7 @@ class Particle_system:
             self.spawn_cooldown_countdown += 1
 
         self.particles.draw(self.surface)
+        # pygame.draw.circle(self.surface, "red", self.position, 20)
         self.particles.update()
         
 

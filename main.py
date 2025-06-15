@@ -2,17 +2,16 @@ import pygame
 import random
 
 from effects import *
+import ui
+import global_settings
 
 pygame.init()
 
-SCREEN_SIZE = (1280, 720)
-GAME_SURFACE_OFSET = (0, 0)
-GAME_FPS = 60
-
-screen = pygame.display.set_mode(SCREEN_SIZE)
+screen = pygame.display.set_mode(global_settings.SCREEN_SIZE)
 clock = pygame.time.Clock()
 
-game_surface = pygame.Surface(SCREEN_SIZE)
+game_surface = pygame.Surface(global_settings.SCREEN_SIZE)
+game_surface.set_colorkey((0, 0, 0)) # vsechno cerne se nebude blitovat (v podstate alfa kanal, ale rychlejsi a jednoudsi)
 
 debug_font = pygame.font.Font("src/fonts/arial.ttf", 20)
 
@@ -51,22 +50,21 @@ class Temporary_gameobject_manager:
 class Player(pygame.sprite.Sprite): 
     def __init__(self):
         super().__init__()
-
         self.snake = [(200, 200), (210, 200), (220, 200), (230, 200), (240, 200)]
-
         self.direction = [1, 0]
         self.scale = 20
-        
         self.length = 5
-
-        self.speed = 5
+        self.speed = 5 #framy
         self.speedCountdown = 0
+
+        self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
 
         self.skin = pygame.Surface((self.scale,self.scale))
         self.skin.fill((255, 255, 255))
-
         self.head = pygame.Surface((self.scale, self.scale))
         self.head.fill((200, 200, 200))
+
+        self.particle_system_manager = Temporary_gameobject_manager()
     
     def eventUpdate(self, event):
         if event.type == pygame.KEYDOWN:
@@ -112,19 +110,25 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
+        self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
+        
+        self.particle_system_manager.update()
+        for i in range(len(self.particle_system_manager.content)):
+            self.particle_system_manager.content[i][0].position = self.reference_pos
+        
+
         self.movementUpdate()
         self.imageUpdate()
+
+        
     
-
-temp_obj_manager = Temporary_gameobject_manager()
-
 
 screen_animation = Animation_shake((0, 0), 100, 5)
 screen_animation.end()
-
-sample_particle_system = Particle_system(game_surface, (100, 100))
-
 screen_animation_isActive = False
+
+main_menu = ui.Main_menu()
+
 player = Player()
 # player = pygame.sprite.GroupSingle()
 # player.add(Player())
@@ -133,14 +137,12 @@ while True:
     # Process player inputs.
     for event in pygame.event.get():
         player.eventUpdate(event)
+        main_menu.eventUpdate(event)
 
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
             pygame.quit()
             raise SystemExit
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                pygame.quit()
-                raise SystemExit
             if event.key == pygame.K_SPACE:
                 if screen_animation_isActive == True:
                     screen_animation_isActive = False
@@ -148,30 +150,33 @@ while True:
                 else:
                     screen_animation_isActive = True
                     screen_animation.isActive = True
+            if event.key == pygame.K_p:
+                player.particle_system_manager.add(Particle_system(game_surface, player.reference_pos), 5)
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            temp_obj_manager.add(Particle_system(game_surface, event.pos), 10)
 
+            if event.key == pygame.K_x:
+                main_menu.active = not main_menu.active
                 
 
-    
+        # if event.type == pygame.MOUSEBUTTONDOWN:
+        #     player.particle_system_manager.add(Particle_system(game_surface, event.pos), 5)
+                
 
 
-    screen.fill("black")
-    screen.blit(game_surface, GAME_SURFACE_OFSET)
-    game_surface.fill("black")
+    screen.fill("black") # cerna
+    screen.blit(game_surface, global_settings.GAME_SURFACE_OFSET)
+    screen.blit(main_menu.surface, (0, 0))
+    game_surface.fill("black") # cerna
 
-
-    temp_obj_manager.update()
-
-    GAME_SURFACE_OFSET = screen_animation.pos
+    global_settings.GAME_SURFACE_OFSET = screen_animation.pos
     screen_animation.update()
 
     player.update()
+    main_menu.update()
 
     #FPS - TODO: pridat do debug surface
     score_surface = debug_font.render(f"FPS: {clock.get_fps()}", True, "White")
     screen.blit(score_surface, (20 , 20))
 
     pygame.display.flip()  # Refresh on-screen display
-    clock.tick(GAME_FPS)  
+    clock.tick(global_settings.GAME_FPS)  
