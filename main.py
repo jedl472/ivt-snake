@@ -14,6 +14,8 @@ clock = pygame.time.Clock()
 
 game_surface = pygame.Surface(SCREEN_SIZE)
 
+debug_font = pygame.font.Font("src/fonts/arial.ttf", 20)
+
 
 class Temporary_gameobject_manager:
     # PRO DOCASNE GAMEOBJEKTY:
@@ -108,6 +110,10 @@ class Player(pygame.sprite.Sprite):
             self.speedCountdown = 0
         else: self.speedCountdown += 1
 
+    def update(self):
+        #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
+        self.movementUpdate()
+        self.imageUpdate()
     
 
 temp_obj_manager = Temporary_gameobject_manager()
@@ -148,24 +154,24 @@ while True:
 
                 
 
-    # Do logical updates here.
-    # ...
-    player.movementUpdate()
-    temp_obj_manager.update()
+    
 
-    GAME_SURFACE_OFSET = screen_animation.pos
 
     screen.fill("black")
     screen.blit(game_surface, GAME_SURFACE_OFSET)
     game_surface.fill("black")
 
-    # Render the graphics here.
-    # ...
-    player.imageUpdate()
+
+    temp_obj_manager.update()
+
+    GAME_SURFACE_OFSET = screen_animation.pos
     screen_animation.update()
-    # sample_particle_system.position = (player.snake[-1])
+
+    player.update()
+
+    #FPS - TODO: pridat do debug surface
+    score_surface = debug_font.render(f"FPS: {clock.get_fps()}", True, "White")
+    screen.blit(score_surface, (20 , 20))
 
     pygame.display.flip()  # Refresh on-screen display
     clock.tick(GAME_FPS)  
-
-    print("FPS:", clock.get_fps())
