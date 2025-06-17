@@ -122,13 +122,16 @@ class Player(pygame.sprite.Sprite):
 
         self.bullet_manager.position = self.reference_pos
         self.bullet_manager.update()
+
+        if self.wallCollision() or self.selfCollision():
+            print("L")
         
 
         #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
         self.movementUpdate()
         self.imageUpdate()
         self.dashUpdate()
-        self.colisionUpdate(food_sprite_group)
+        self.foodUpdate(food_sprite_group)
 
     def dashUpdate(self):
         if self.dashCountdown == self.dashDuration:
@@ -148,7 +151,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.speed = 5
 
-    def colisionUpdate(self, food_sprite_group):
+    def foodUpdate(self, food_sprite_group):
         is_collision = False
 
         for i in food_sprite_group.sprites():
@@ -157,8 +160,11 @@ class Player(pygame.sprite.Sprite):
                 self.battery += self.battery_to_segments
             
 
-        # if is_collision:
-            # print("whatever")
+    def selfCollision(self):
+        return self.snake[-1] in self.snake[0:-1]
+    
+    def wallCollision(self):
+        return self.snake[len(self.snake)-1][0] >= global_settings.SCREEN_SIZE[0] or self.snake[len(self.snake)-1][0] < 0 or self.snake[len(self.snake)-1][1] >= global_settings.SCREEN_SIZE[1] or self.snake[len(self.snake)-1][1] < 0
 
 
 
