@@ -36,6 +36,7 @@ class Animation:
 class Animation_shake(Animation):
     def __init__(self, mother_pos, offset_range, speed):
         super().__init__(mother_pos, mother_pos, speed)
+        print("animation_init")
 
         self.speed = speed
         self.mother_pos = list(mother_pos)
@@ -55,24 +56,37 @@ class Animation_shake(Animation):
         if self.phase >= self.duration and self.isActive:
             self.restart()
 
-    def end(self):
+    def kill(self):
         super().__init__(self.pos, self.mother_pos, self.duration)
         self.isActive = False
+
+        return self.duration
 
 
 
 class Particle(pygame.sprite.Sprite):
-    def __init__(self, position):
+    def __init__(self, position, directed=None):
         super().__init__()
         
         self.image = pygame.Surface((3, 3))
         self.image.fill("aqua")
-        self.speed = 0.3
+        self.speed = global_settings.GAME_FPS / 550 # cim vyssi cislo, tim nizsi rychlost
+        self.directed = directed
+
+        self.direction_range = 50
+        self.directed_cone_width = int(self.direction_range /2)
 
         self.rect = self.image.get_rect(midbottom = position)
-
-        self.direction = (random.randrange(-10, 10) * self.speed, random.randrange(-10, 10) * self.speed)
         
+        if self.directed == None:
+            self.direction = (random.randrange(-self.direction_range, self.direction_range) * self.speed, random.randrange(-self.direction_range, self.direction_range) * self.speed)
+        else:
+            if self.directed == [-1, 0]: self.direction = (random.randrange(self.directed_cone_width, self.direction_range) * self.speed, random.randrange(-self.directed_cone_width, self.direction_range) * self.speed)
+            elif self.directed == [1, 0]: self.direction = (random.randrange(-self.direction_range, self.directed_cone_width) * self.speed, random.randrange(-self.directed_cone_width, self.directed_cone_width) * self.speed)
+            elif self.directed == [0, -1]: self.direction = (random.randrange(-self.directed_cone_width, self.directed_cone_width) * self.speed, random.randrange(self.directed_cone_width, self.direction_range) * self.speed)
+            elif self.directed == [0, 1]: self.direction = (random.randrange(-self.directed_cone_width, self.direction_range) * self.speed, random.randrange(-self.direction_range, self.directed_cone_width) * self.speed)
+
+
         self.life = 30 #decrements
 
 
@@ -87,13 +101,15 @@ class Particle(pygame.sprite.Sprite):
 
 
 class Particle_system:
-    def __init__(self, surface, position, spawn_cooldown = 0):
-        #particle properties
+    def __init__(self, surface, position, spawn_cooldown = 0.0, direction=None):
+        #particle propertie
         self.particle_speed = 0.3
         self.particle_life = 30
+
+        self.direction = direction
         
         #particle system
-        self.spawn_cooldown = spawn_cooldown
+        self.spawn_cooldown = int(spawn_cooldown * global_settings.GAME_FPS)
         self.spawn_cooldown_countdown = 0 #kazdym updatem se incrementuje, -1 pokud je objekt neaktivni
         
         self.particles = pygame.sprite.Group()
@@ -104,7 +120,8 @@ class Particle_system:
 
     def update(self):
         if self.spawn_cooldown_countdown >= self.spawn_cooldown:
-            new_particle = Particle(self.position)
+            new_particle = Particle(self.position, directed=self.direction)
+            new_particle.directed = self.direction
             self.particles.add(new_particle)
             
             self.spawn_cooldown_countdown = 0

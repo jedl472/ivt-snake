@@ -8,7 +8,7 @@ menu_font1 = pygame.font.Font("src/fonts/LeagueSpartan-Bold.ttf", 50)
 
 class Main_menu:
     def __init__(self):
-        self.active = True
+        self.active = False
 
         self.surface = pygame.Surface(global_settings.SCREEN_SIZE)
         self.surface.set_colorkey((0, 0, 0))

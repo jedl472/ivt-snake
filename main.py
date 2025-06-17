@@ -54,8 +54,11 @@ class Player(pygame.sprite.Sprite):
         self.direction = [1, 0]
         self.scale = 20
         self.length = 5
-        self.speed = 5 #framy
+        self.speed = 5 #framy, cim vetsi tim pomalejsi
         self.speedCountdown = 0
+
+        self.dashCountdown = 0
+        self.dashDuration = global_settings.GAME_FPS /2
 
         self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
 
@@ -65,22 +68,28 @@ class Player(pygame.sprite.Sprite):
         self.head.fill((200, 200, 200))
 
         self.particle_system_manager = Temporary_gameobject_manager()
+        self.animation_manager = Temporary_gameobject_manager()
+
+        self.items = [] # list poddružených objektů
     
     def eventUpdate(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a:
+            if event.key == pygame.K_a and self.direction != [1, 0]:
                 self.direction = [-1, 0]
-            if event.key == pygame.K_d:
+            if event.key == pygame.K_d and self.direction != [-1, 0]:
                 self.direction = [1, 0]
-            if event.key == pygame.K_w:
+            if event.key == pygame.K_w and self.direction != [0, 1]:
                 self.direction = [0, -1]
-            if event.key == pygame.K_s:
+            if event.key == pygame.K_s and self.direction != [0, -1]:
                 self.direction = [0, 1]
             
             if event.key == pygame.K_UP:
                 self.length += 1
             if event.key == pygame.K_DOWN:
                 self.length -= 1
+
+            if event.key == pygame.K_e:
+                self.dashCountdown = self.dashDuration
 
 
     def imageUpdate(self):
@@ -115,16 +124,38 @@ class Player(pygame.sprite.Sprite):
         self.particle_system_manager.update()
         for i in range(len(self.particle_system_manager.content)):
             self.particle_system_manager.content[i][0].position = self.reference_pos
+
+
+        self.animation_manager.update()
+        for i in range(len(self.animation_manager.content)):
+            global_settings.GAME_SURFACE_OFSET = self.animation_manager.content[i][0].pos
         
 
         self.movementUpdate()
         self.imageUpdate()
+        self.dashUpdate()
 
+    def dashUpdate(self):
+        if self.dashCountdown == self.dashDuration:
+            self.animation_manager.add(Animation_shake((0, 0), 40, 3), self.dashDuration)
         
+        if self.dashCountdown != 0:
+            if (self.dashDuration * 2/8) < self.dashCountdown < self.dashDuration:
+                self.speed = 0
+                self.particle_system_manager.add(Particle_system(game_surface, self.reference_pos, direction=self.direction, spawn_cooldown=1/60), 2)
+
+            elif 0 < self.dashCountdown < self.dashDuration * 2/8:
+                self.speed = 1000
+
+            self.dashCountdown -= 1
+        else:
+            self.speed = 5
+
+
     
 
 screen_animation = Animation_shake((0, 0), 100, 5)
-screen_animation.end()
+screen_animation.kill()
 screen_animation_isActive = False
 
 main_menu = ui.Main_menu()
@@ -132,6 +163,8 @@ main_menu = ui.Main_menu()
 player = Player()
 # player = pygame.sprite.GroupSingle()
 # player.add(Player())
+
+# test_particle_system = Particle_system(game_surface, (100, 100), direction=([0, 1]))
 
 while True:
     # Process player inputs.
@@ -146,7 +179,7 @@ while True:
             if event.key == pygame.K_SPACE:
                 if screen_animation_isActive == True:
                     screen_animation_isActive = False
-                    screen_animation.end()
+                    screen_animation.kill()
                 else:
                     screen_animation_isActive = True
                     screen_animation.isActive = True
@@ -177,6 +210,8 @@ while True:
     #FPS - TODO: pridat do debug surface
     score_surface = debug_font.render(f"FPS: {clock.get_fps()}", True, "White")
     screen.blit(score_surface, (20 , 20))
+
+    # test_particle_system.update()
 
     pygame.display.flip()  # Refresh on-screen display
     clock.tick(global_settings.GAME_FPS)  
