@@ -73,7 +73,7 @@ while True:
     global_settings.GAME_SURFACE_OFSET = screen_animation.pos
     screen_animation.update()
 
-    player.update()
+    player.update(food_manager.content)
     main_menu.update()
 
     food_manager.update()

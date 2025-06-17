@@ -37,6 +37,8 @@ class Player(pygame.sprite.Sprite):
         self.head = pygame.Surface((self.scale, self.scale))
         self.head.fill(self. default_color_head)
 
+        self.rect = self.head.get_rect()
+
         self.particle_system_manager = utils.Temporary_gameobject_manager()
         self.animation_manager = utils.Temporary_gameobject_manager()
         self.bullet_manager = Bullet_manager(self.surface)
@@ -106,7 +108,7 @@ class Player(pygame.sprite.Sprite):
             self.speedCountdown = 0
         else: self.speedCountdown += 1
 
-    def update(self):
+    def update(self, food_sprite_group):
         self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
         
         self.particle_system_manager.update()
@@ -126,7 +128,7 @@ class Player(pygame.sprite.Sprite):
         self.movementUpdate()
         self.imageUpdate()
         self.dashUpdate()
-        self.colisionUpdate()
+        self.colisionUpdate(food_sprite_group)
 
     def dashUpdate(self):
         if self.dashCountdown == self.dashDuration:
@@ -146,8 +148,17 @@ class Player(pygame.sprite.Sprite):
         else:
             self.speed = 5
 
-    def colisionUpdate(self):
-        pass
+    def colisionUpdate(self, food_sprite_group):
+        is_collision = False
+
+        for i in food_sprite_group.sprites():
+            if i.rect.collidepoint(self.reference_pos):
+                i.kill()
+                self.battery += self.battery_to_segments
+            
+
+        # if is_collision:
+            # print("whatever")
 
 
 
@@ -196,6 +207,7 @@ class Food(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom = position)
         
         self.position = position
+
 
     def update(self):
         pass 
