@@ -36,7 +36,6 @@ class Animation:
 class Animation_shake(Animation):
     def __init__(self, mother_pos, offset_range, speed):
         super().__init__(mother_pos, mother_pos, speed)
-        print("animation_init")
 
         self.speed = speed
         self.mother_pos = list(mother_pos)
@@ -82,9 +81,9 @@ class Particle(pygame.sprite.Sprite):
             self.direction = (random.randrange(-self.direction_range, self.direction_range) * self.speed, random.randrange(-self.direction_range, self.direction_range) * self.speed)
         else:
             if self.directed == [-1, 0]: self.direction = (random.randrange(self.directed_cone_width, self.direction_range) * self.speed, random.randrange(-self.directed_cone_width, self.direction_range) * self.speed)
-            elif self.directed == [1, 0]: self.direction = (random.randrange(-self.direction_range, self.directed_cone_width) * self.speed, random.randrange(-self.directed_cone_width, self.directed_cone_width) * self.speed)
+            elif self.directed == [1, 0]: self.direction = (random.randrange(-self.direction_range, -self.directed_cone_width) * self.speed, random.randrange(-self.directed_cone_width, self.direction_range) * self.speed)
             elif self.directed == [0, -1]: self.direction = (random.randrange(-self.directed_cone_width, self.directed_cone_width) * self.speed, random.randrange(self.directed_cone_width, self.direction_range) * self.speed)
-            elif self.directed == [0, 1]: self.direction = (random.randrange(-self.directed_cone_width, self.direction_range) * self.speed, random.randrange(-self.direction_range, self.directed_cone_width) * self.speed)
+            elif self.directed == [0, 1]: self.direction = (random.randrange(-self.directed_cone_width, self.directed_cone_width) * self.speed, random.randrange(-self.direction_range, -self.directed_cone_width) * self.speed)
 
 
         self.life = 30 #decrements
@@ -122,6 +121,7 @@ class Particle_system:
         if self.spawn_cooldown_countdown >= self.spawn_cooldown:
             new_particle = Particle(self.position, directed=self.direction)
             new_particle.directed = self.direction
+            new_particle.life = self.particle_life
             self.particles.add(new_particle)
             
             self.spawn_cooldown_countdown = 0

@@ -164,7 +164,7 @@ player = Player()
 # player = pygame.sprite.GroupSingle()
 # player.add(Player())
 
-# test_particle_system = Particle_system(game_surface, (100, 100), direction=([0, 1]))
+test_particle_system = Particle_system(game_surface, (100, 100), direction=([0, 1]))
 
 while True:
     # Process player inputs.
@@ -211,7 +211,7 @@ while True:
     score_surface = debug_font.render(f"FPS: {clock.get_fps()}", True, "White")
     screen.blit(score_surface, (20 , 20))
 
-    # test_particle_system.update()
+    test_particle_system.update()
 
     pygame.display.flip()  # Refresh on-screen display
     clock.tick(global_settings.GAME_FPS)  
