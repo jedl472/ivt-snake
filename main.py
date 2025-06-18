@@ -45,6 +45,10 @@ while True:
     pygame.display.flip()  # Refresh on-screen display
     clock.tick(global_settings.SET_GAME_FPS)  
 
+
+
+
+
 # print(utils.random_screen_position())
 # pygame.init()
 #

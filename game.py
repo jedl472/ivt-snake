@@ -27,6 +27,10 @@ class Player(pygame.sprite.Sprite):
         self.dashCountdown = 0
         self.dashDuration = 20
 
+        self.dead = False
+        self.deathAnimationCountdown = 0
+        self.deathAnimationSpeed = utils.fsm(13)
+
         self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
         
         self.default_color_skin = (255, 255, 255)
@@ -75,18 +79,29 @@ class Player(pygame.sprite.Sprite):
         # last_segment_color_coef = 1
         # if self.battery % self.battery_to_segments != 0: last_segment_color_coef = 1/(self.battery % self.battery_to_segments)
         
+        death_color_override = None
+        if self.deathAnimationCountdown > 0: death_color_override = (0, 0, 0)
+        else: death_color_override = None
+
         last_segment_color = None
         if self.battery % self.battery_to_segments == 0: last_segment_color = (255, 255, 255)
         if self.battery % self.battery_to_segments == 1: last_segment_color = (0, 100, 100)
         if self.battery % self.battery_to_segments == 2: last_segment_color = (100, 255, 255)
 
+        _skin_fill = None
+        
         for snake_pos in self.snake[0:-1]:
             self.surface.blit(self.skin, snake_pos)
         
         self.surface.blit(self.head, self.snake[-1])
-        self.skin.fill(last_segment_color)
+        if (self.death and death_color_override != None): _skin_fill = death_color_override 
+        else: _skin_fill = last_segment_color 
+        self.skin.fill(_skin_fill)
         self.surface.blit(self.skin, self.snake[0])
-        self.skin.fill(self.default_color_skin)
+
+        if (self.death and death_color_override != None): _skin_fill = death_color_override 
+        else: _skin_fill = self.default_color_skin 
+        self.skin.fill(_skin_fill)
 
     def movementUpdate(self):
         if self.speedCountdown >= self.speed:
@@ -124,7 +139,13 @@ class Player(pygame.sprite.Sprite):
         self.bullet_manager.update()
 
         if self.wallCollision() or self.selfCollision():
-            print("L")
+            self.death()
+
+        if self.dead:
+            if self.deathAnimationCountdown <= -self.deathAnimationSpeed:
+                self.deathAnimationCountdown = self.deathAnimationSpeed
+            else:
+                self.deathAnimationCountdown -= 1
         
 
         #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
@@ -152,8 +173,6 @@ class Player(pygame.sprite.Sprite):
             self.speed = 5
 
     def foodUpdate(self, food_sprite_group):
-        is_collision = False
-
         for i in food_sprite_group.sprites():
             if i.rect.collidepoint(self.reference_pos):
                 i.kill()
@@ -164,7 +183,13 @@ class Player(pygame.sprite.Sprite):
         return self.snake[-1] in self.snake[0:-1]
     
     def wallCollision(self):
-        return self.snake[len(self.snake)-1][0] >= global_settings.SCREEN_SIZE[0] or self.snake[len(self.snake)-1][0] < 0 or self.snake[len(self.snake)-1][1] >= global_settings.SCREEN_SIZE[1] or self.snake[len(self.snake)-1][1] < 0
+        is_collision = self.snake[len(self.snake)-1][0] >= global_settings.SCREEN_SIZE[0] or self.snake[len(self.snake)-1][0] < 0 or self.snake[len(self.snake)-1][1] >= global_settings.SCREEN_SIZE[1] or self.snake[len(self.snake)-1][1] < 0
+
+        return is_collision 
+
+    def death(self):
+        self.speed = 100000
+        self.dead = True
 
 
 
