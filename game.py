@@ -33,6 +33,8 @@ class Player(pygame.sprite.Sprite):
         self.dashDuration = 20
         
         self.surpressMovementUpdate = False
+        self.movementUpdateLock = False # RO
+
         self.dead = False
         self.deathAnimationCountdown = 0
         self.deathAnimationSpeed = utils.fsm(13)
@@ -56,14 +58,18 @@ class Player(pygame.sprite.Sprite):
     
     def eventUpdate(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == self.keymap[0] and self.direction != [1, 0]:
+            if event.key == self.keymap[0] and self.direction != [1, 0] and not self.movementUpdateLock:
                 self.direction = [-1, 0]
-            elif event.key == self.keymap[1] and self.direction != [-1, 0]:
+                self.movementUpdateLock = True
+            elif event.key == self.keymap[1] and self.direction != [-1, 0] and not self.movementUpdateLock:
                 self.direction = [1, 0]
-            elif event.key == self.keymap[2]  and self.direction != [0, 1]:
+                self.movementUpdateLock = True
+            elif event.key == self.keymap[2]  and self.direction != [0, 1] and not self.movementUpdateLock:
                 self.direction = [0, -1]
-            elif event.key == self.keymap[3] and self.direction != [0, -1]:
+                self.movementUpdateLock = True
+            elif event.key == self.keymap[3] and self.direction != [0, -1] and not self.movementUpdateLock:
                 self.direction = [0, 1]
+                self.movementUpdateLock = True
             
             # if event.key == pygame.K_UP:
             #     self.battery += 1
@@ -113,6 +119,7 @@ class Player(pygame.sprite.Sprite):
         self.skin.fill(_skin_fill)
 
     def movementUpdate(self):
+        self.movementUpdateLock = False
         if self.speedCountdown >= self.speed:
             if self.direction == [1, 0]:
                 self.snake.append((self.snake[len(self.snake)-1][0] + self.scale , self.snake[len(self.snake)-1][1]))
@@ -186,6 +193,8 @@ class Player(pygame.sprite.Sprite):
             if i.rect.collidepoint(self.reference_pos):
                 i.kill()
                 self.battery += self.battery_to_segments
+
+                self.particle_system_manager.add(effects.Particle_system(self.surface, self.reference_pos, particle_life=15, spawn_cooldown=0.0, color="red"), 7)
             
 
     def selfCollision(self):

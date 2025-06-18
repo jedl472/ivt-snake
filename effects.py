@@ -66,11 +66,11 @@ class Animation_shake(Animation):
 
 
 class Particle(pygame.sprite.Sprite):
-    def __init__(self, position, directed=None):
+    def __init__(self, position, directed=None, color="aqua"):
         super().__init__()
         
         self.image = pygame.Surface((3, 3))
-        self.image.fill("aqua")
+        self.image.fill(color)
         self.speed = global_settings.SET_GAME_FPS / 550 # cim vyssi cislo, tim nizsi rychlost
         self.directed = directed
 
@@ -102,10 +102,11 @@ class Particle(pygame.sprite.Sprite):
 
 
 class Particle_system:
-    def __init__(self, surface, position, spawn_cooldown = 0.0, direction=None):
+    def __init__(self, surface, position, spawn_cooldown = 0.0, direction=None, particle_life=30, color="aqua"):
         #particle propertie
         self.particle_speed = 0.3
-        self.particle_life = 30
+        self.particle_life = particle_life
+        self.particle_color = color
 
         self.direction = direction
         
@@ -123,7 +124,7 @@ class Particle_system:
 
     def update(self):
         if self.spawn_cooldown_countdown >= self.spawn_cooldown:
-            new_particle = Particle(self.position, directed=self.direction)
+            new_particle = Particle(self.position, directed=self.direction, color=self.particle_color)
             new_particle.directed = self.direction
             new_particle.life = self.particle_life
             self.particles.add(new_particle)
