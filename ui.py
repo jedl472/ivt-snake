@@ -9,12 +9,12 @@ font_podnadpis = pygame.font.Font("src/fonts/LeagueSpartan-Bold.ttf", 30)
 
 font_tlacitka = pygame.font.Font("src/fonts/LeagueSpartan-Bold.ttf", 50)
 
-def startButtonPressed():
-    print("START")
 
 class Main_menu:
-    def __init__(self):
-        self.active = False
+    def __init__(self, startButtonPressed=None, active=False):
+        self.active = active
+
+        self.startButtonPressed = startButtonPressed
 
         self.surface = pygame.Surface(global_settings.SCREEN_SIZE)
         self.surface.set_colorkey((0, 0, 0))
