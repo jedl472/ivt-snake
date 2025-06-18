@@ -8,11 +8,16 @@ import utils
 
 
 class Player(pygame.sprite.Sprite): 
-    def __init__(self, surface):
+    def __init__(self, surface, start_position=160, keymap=[pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_e, pygame.K_f], opponent_player=None):
         super().__init__()
         self.surface = surface
+        
+        self.start_position = start_position
+        self.keymap = keymap
 
-        self.snake = [(200, 200), (210, 200), (220, 200), (230, 200), (240, 200)]
+        self.opponent_player = opponent_player
+
+        self.snake = [(start_position, start_position), (start_position + 10, start_position), (start_position + 20, start_position), (start_position + 30, start_position), (start_position + 40, start_position)]
         self.direction = [1, 0]
         self.scale = 20
         self.length = 5
@@ -50,24 +55,24 @@ class Player(pygame.sprite.Sprite):
     
     def eventUpdate(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a and self.direction != [1, 0]:
+            if event.key == self.keymap[0] and self.direction != [1, 0]:
                 self.direction = [-1, 0]
-            elif event.key == pygame.K_d and self.direction != [-1, 0]:
+            elif event.key == self.keymap[1] and self.direction != [-1, 0]:
                 self.direction = [1, 0]
-            elif event.key == pygame.K_w and self.direction != [0, 1]:
+            elif event.key == self.keymap[2]  and self.direction != [0, 1]:
                 self.direction = [0, -1]
-            elif event.key == pygame.K_s and self.direction != [0, -1]:
+            elif event.key == self.keymap[3] and self.direction != [0, -1]:
                 self.direction = [0, 1]
             
-            if event.key == pygame.K_UP:
-                self.battery += 1
-            if event.key == pygame.K_DOWN and self.battery != 0:
-                self.battery -= 1
+            # if event.key == pygame.K_UP:
+            #     self.battery += 1
+            # if event.key == pygame.K_DOWN and self.battery != 0:
+            #     self.battery -= 1
 
-            if event.key == pygame.K_e:
+            if event.key == self.keymap[4]:
                 self.dashCountdown = self.dashDuration
 
-            if event.key == pygame.K_f:
+            if event.key == self.keymap[5]:
                 self.bullet_manager.spawn(self.direction)
                 
 
@@ -125,34 +130,34 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, food_sprite_group):
         self.reference_pos = ((self.snake[-1][0] + (self.scale/2), self.snake[-1][1] + (self.scale/2)))
-        
-        self.particle_system_manager.update()
-        for i in range(len(self.particle_system_manager.content)):
-            self.particle_system_manager.content[i][0].position = self.reference_pos
-
-
-        self.animation_manager.update()
-        for i in range(len(self.animation_manager.content)):
-            global_settings.GAME_SURFACE_OFSET = self.animation_manager.content[i][0].pos
-
-        self.bullet_manager.position = self.reference_pos
-        self.bullet_manager.update()
-
-        if self.wallCollision() or self.selfCollision():
-            self.death()
 
         if self.dead:
             if self.deathAnimationCountdown <= -self.deathAnimationSpeed:
                 self.deathAnimationCountdown = self.deathAnimationSpeed
             else:
                 self.deathAnimationCountdown -= 1
-        
+        else:
+            self.particle_system_manager.update()
+            for i in range(len(self.particle_system_manager.content)):
+                self.particle_system_manager.content[i][0].position = self.reference_pos
 
-        #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
-        self.movementUpdate()
+
+            self.animation_manager.update()
+            for i in range(len(self.animation_manager.content)):
+                global_settings.GAME_SURFACE_OFSET = self.animation_manager.content[i][0].pos
+
+            self.bullet_manager.position = self.reference_pos
+            self.bullet_manager.update()
+
+            if (self.wallCollision() or self.selfCollision()) or self.opponentCollision():
+                self.death()
+
+            #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
+            self.movementUpdate()
+            self.dashUpdate()
+            self.foodUpdate(food_sprite_group)
+
         self.imageUpdate()
-        self.dashUpdate()
-        self.foodUpdate(food_sprite_group)
 
     def dashUpdate(self):
         if self.dashCountdown == self.dashDuration:
@@ -188,15 +193,30 @@ class Player(pygame.sprite.Sprite):
         return is_collision 
 
     def death(self):
+        print("memento mori")
         self.speed = 100000
         self.dead = True
+
+    def opponentCollision(self):
+        if self.opponent_player != None:
+            is_collision = False
+
+            if not is_collision:
+                is_collision = self.snake[-1] in self.opponent_player.snake[0:-1]
+
+            return is_collision
 
 
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, position, direction):
         super().__init__()
-        self.image = pygame.Surface((10, 5))
+
+        self.sprite_size = None
+        if direction[1] == 0: self.sprite_size = (10, 5)
+        elif direction[0] == 0: self.sprite_size = (5, 10)
+
+        self.image = pygame.Surface(self.sprite_size)
         self.image.fill("aqua")
 
         self.rect = self.image.get_rect(midbottom = position)
