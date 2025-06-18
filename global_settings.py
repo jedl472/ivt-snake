@@ -1,5 +1,7 @@
 #soubor který se importuje všude a obsahuje nastavení jako velikost obrazovky atd
 
+FLAG_DEBUG = False
+
 SCREEN_SIZE = (1280, 720)
 GAME_SURFACE_OFSET = (0, 0)
 

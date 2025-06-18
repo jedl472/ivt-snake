@@ -8,7 +8,7 @@ import utils
 
 
 class Player(pygame.sprite.Sprite): 
-    def __init__(self, surface, start_position=160, keymap=[pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_e, pygame.K_f], opponent_player=None):
+    def __init__(self, surface, start_position=160, keymap=[pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_e, pygame.K_SPACE], opponent_player=None):
         super().__init__()
         self.surface = surface
         
@@ -31,7 +31,8 @@ class Player(pygame.sprite.Sprite):
 
         self.dashCountdown = 0
         self.dashDuration = 20
-
+        
+        self.surpressMovementUpdate = False
         self.dead = False
         self.deathAnimationCountdown = 0
         self.deathAnimationSpeed = utils.fsm(13)
@@ -69,12 +70,15 @@ class Player(pygame.sprite.Sprite):
             # if event.key == pygame.K_DOWN and self.battery != 0:
             #     self.battery -= 1
 
-            if event.key == self.keymap[4]:
+            if event.key == self.keymap[4] and self.battery > 1:
                 self.dashCountdown = self.dashDuration
 
-            if event.key == self.keymap[5]:
+                self.battery -= 2
+
+            if event.key == self.keymap[5] and self.battery > 0:
                 self.bullet_manager.spawn(self.direction)
                 
+                self.battery -= 1
 
 
     def imageUpdate(self):
@@ -149,11 +153,11 @@ class Player(pygame.sprite.Sprite):
             self.bullet_manager.position = self.reference_pos
             self.bullet_manager.update()
 
-            if (self.wallCollision() or self.selfCollision()) or self.opponentCollision():
+            if (self.wallCollision() or self.selfCollision()) or self.opponentBodyCollision() or self.opponentBulletCollision():
                 self.death()
 
             #vzhledem k tomu, ze eventUpdate potrebuje typ eventu, musí se volat oddelene
-            self.movementUpdate()
+            if not self.surpressMovementUpdate: self.movementUpdate()
             self.dashUpdate()
             self.foodUpdate(food_sprite_group)
 
@@ -193,11 +197,10 @@ class Player(pygame.sprite.Sprite):
         return is_collision 
 
     def death(self):
-        print("memento mori")
         self.speed = 100000
         self.dead = True
 
-    def opponentCollision(self):
+    def opponentBodyCollision(self):
         if self.opponent_player != None:
             is_collision = False
 
@@ -206,6 +209,17 @@ class Player(pygame.sprite.Sprite):
 
             return is_collision
 
+    def opponentBulletCollision(self):
+        coll_rect_list = []
+        for i in self.snake:
+            coll_rect_list.append(pygame.Rect(i[0], i[1], 20, 20))
+
+        for i in self.opponent_player.bullet_manager.content.sprites():
+            for selfrect in coll_rect_list:
+                if pygame.Rect.colliderect(selfrect, i.rect):
+                    return True
+
+        return False
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -265,10 +279,10 @@ class Food(pygame.sprite.Sprite):
 
 
 class Food_manager:
-    def __init__(self, surface):
+    def __init__(self, surface, food_amount=5):
         self.surface = surface
         
-        self.food_amount = 5
+        self.food_amount = food_amount
 
         self.content = pygame.sprite.Group()
 
